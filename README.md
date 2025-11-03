@@ -106,7 +106,7 @@ endmodule
 ```
 ### Simulation Output
 
-
+----- Paste the Screenshot of the output here 
 
 
 ### Result
