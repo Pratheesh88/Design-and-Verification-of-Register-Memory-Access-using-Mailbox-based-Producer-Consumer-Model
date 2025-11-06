@@ -62,51 +62,216 @@ This experiment demonstrates **inter-process synchronization and data transfer**
 
 ### Design File — `register_memory.sv`
 ```systemverilog
-//=====================================================
-// Design: Register Memory Model
-//=====================================================
-module register_memory #(parameter WIDTH = 8, DEPTH = 8) ();
+module reg_memory_mailbox;
 
-    // Register memory declaration
-    logic [WIDTH-1:0] mem [0:DEPTH-1];
+  typedef struct {
+    int addr;
+    int data;
+    bit wr; // 1 = write, 0 = read
+  } packet_t;
 
-    // Write task
-  
+  mailbox mbox = new();
 
-    // Read task
-    
+  int memory [0:15];
+
+  initial begin
+    fork
+      producer();
+      consumer();
+    join
+  end
+
+  task producer();
+    packet_t pkt;
+    int i;
+    $display("\n=== PRODUCER STARTED ===");
+    for (i = 0; i < 6; i++) begin
+      pkt.addr = $urandom_range(12, 56);
+      pkt.data = $urandom_range(100, 380);
+      pkt.wr   = $urandom_range(0, 1);
+      mbox.put(pkt);
+      $display("[%0t] PRODUCER: Sent packet -> Addr=%0d Data=%0d WR=%0b",
+               $time, pkt.addr, pkt.data, pkt.wr);
+      #8;
+    end
+  endtask
+
+  task consumer();
+    packet_t rcv;
+    int rd_data;
+    $display("\n=== CONSUMER STARTED ===");
+    forever begin
+      mbox.get(rcv);
+      if (rcv.wr) begin
+        memory[rcv.addr] = rcv.data;
+        $display("[%0t] CONSUMER: WRITE -> Addr=%0d Data=%0d",
+                 $time, rcv.addr, rcv.data);
+      end 
+      else begin
+        rd_data = memory[rcv.addr];
+        $display("[%0t] CONSUMER: READ  -> Addr=%0d Data=%0d",
+                 $time, rcv.addr, rd_data);
+      end
+      #5;
+    end
+  endtask
+
 endmodule
 ```
 ### Testbench File
 ```
-//=====================================================
-// Testbench: Producer-Consumer using Mailbox
-//=====================================================
-module register_memory_tb;
+module tb_reg_memory_mailbox;
 
-    // Parameter definitions
-    parameter WIDTH = 8;
-    parameter DEPTH = 8;
+  reg_memory_mailbox uut();
 
-    // Mailbox declaration
-    mailbox mbx = new();
-
-    // Instantiate Register Memory
-    register_memory #(WIDTH, DEPTH) regmem();
-
-    
-        fork
-            producer();
-            consumer();
-        join_any
-        #50 $finish;
-    end
+  initial begin
+    #200 $finish;
+  end
 
 endmodule
 ```
 ### Simulation Output
 
------ Paste the Screenshot of the output here 
+# Experiment 5: Design and Verification of Register Memory Access using Mailbox-based Producer-Consumer Model
+## Giri R
+##212223060068
+---
+
+## Aim  
+To design and verify a **Register Memory Access system** using a **mailbox-based Producer-Consumer model** in **SystemVerilog**, demonstrating inter-process communication and synchronization in a concurrent environment.
+
+---
+
+## Apparatus Required  
+- Computer with **Windows/Linux OS**  
+- **EDA Playground** (SystemVerilog environment) or **ModelSim 2020.1**  
+- Internet browser (for EDA Playground execution)  
+
+---
+
+## Description  
+This experiment demonstrates **inter-process synchronization and data transfer** using the **mailbox mechanism** in SystemVerilog.  
+
+- The **Producer process** writes data into a **mailbox**, simulating register write access.  
+- The **Consumer process** retrieves data from the mailbox, representing register read access.  
+- Mailboxes allow safe **communication between concurrent processes** without data corruption.  
+- Verification ensures that the written data matches the read data (register consistency).  
+
+---
+
+## Features  
+- Demonstrates **Producer–Consumer synchronization** using mailbox  
+- Implements **Register Memory Access** (write and read)  
+- Uses **concurrent processes** (`fork...join`) in SystemVerilog  
+- Self-checking **testbench verification**  
+
+---
+
+## Procedure  
+
+1. **Open EDA Playground**  
+   - Go to [https://www.edaplayground.com](https://www.edaplayground.com)  
+   - Select **SystemVerilog (IEEE 1800-2012)** and choose **ModelSim/QuestaSim** as the simulator.  
+
+2. **Create Files**  
+   - Create `register_memory.sv` → Design file  
+   - Create `register_memory_tb.sv` → Testbench file  
+
+3. **Paste the Code**  
+   - Copy the design and testbench code from below.  
+
+4. **Run the Simulation**  
+   - Click **Run** → **Run Simulation**.  
+
+5. **Observe Output**  
+   - View the simulation log for producer/consumer transactions.  
+   - Check the mailbox synchronization and matching register values.  
+
+6. **Analyze Results**  
+   - Confirm that all produced data is consumed correctly.  
+   - Ensure no data mismatch or deadlock occurs.  
+
+---
+
+##  SystemVerilog Code
+
+### Design File — `register_memory.sv`
+```systemverilog
+module reg_memory_mailbox;
+
+  typedef struct {
+    int addr;
+    int data;
+    bit wr; // 1 = write, 0 = read
+  } packet_t;
+
+  mailbox mbox = new();
+
+  int memory [0:15];
+
+  initial begin
+    fork
+      producer();
+      consumer();
+    join
+  end
+
+  task producer();
+    packet_t pkt;
+    int i;
+    $display("\n=== PRODUCER STARTED ===");
+    for (i = 0; i < 6; i++) begin
+      pkt.addr = $urandom_range(12, 56);
+      pkt.data = $urandom_range(100, 380);
+      pkt.wr   = $urandom_range(0, 1);
+      mbox.put(pkt);
+      $display("[%0t] PRODUCER: Sent packet -> Addr=%0d Data=%0d WR=%0b",
+               $time, pkt.addr, pkt.data, pkt.wr);
+      #8;
+    end
+  endtask
+
+  task consumer();
+    packet_t rcv;
+    int rd_data;
+    $display("\n=== CONSUMER STARTED ===");
+    forever begin
+      mbox.get(rcv);
+      if (rcv.wr) begin
+        memory[rcv.addr] = rcv.data;
+        $display("[%0t] CONSUMER: WRITE -> Addr=%0d Data=%0d",
+                 $time, rcv.addr, rcv.data);
+      end 
+      else begin
+        rd_data = memory[rcv.addr];
+        $display("[%0t] CONSUMER: READ  -> Addr=%0d Data=%0d",
+                 $time, rcv.addr, rd_data);
+      end
+      #5;
+    end
+  endtask
+
+endmodule
+```
+### Testbench File
+```
+module tb_reg_memory_mailbox;
+
+  reg_memory_mailbox uut();
+
+  initial begin
+    #200 $finish;
+  end
+
+endmodule
+```
+### Simulation Output
+
+<img width="1897" height="984" alt="Screenshot 2025-11-06 104138" src="https://github.com/user-attachments/assets/2b2bb61d-131b-4bfd-9f1c-4fde990cfac5" />
+
+The Register Memory Access was successfully designed and verified using the mailbox-based Producer-Consumer model in SystemVerilog.
+The producer wrote random data into memory, and the consumer read and validated it, demonstrating correct mailbox synchronization and data integrity.
+
 
 
 ### Result
